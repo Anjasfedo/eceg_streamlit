@@ -1,154 +1,127 @@
 import streamlit as st
-from DummyKTPGenerator import DummyKTPGenerator  # Import DummyKTPGenerator
 from EllipticCurveElGamal import EllipticCurveElGamal  # Import EllipticCurveElGamal
 
-# Initialize instances
-ktp_generator = DummyKTPGenerator()
-ecc = EllipticCurveElGamal()
+# Cached function to initialize ECC instance
+
+
+@st.cache_resource
+def initialize_ecc():
+    return EllipticCurveElGamal()
+
+# Cached function to generate keys
+
+
+@st.cache_data
+def generate_keys():
+    ecc_instance = initialize_ecc()
+    return ecc_instance.generate_keys()
+
+
+# Initialize ECC instance
+ecc = initialize_ecc()
 
 # Initialize session state
-if "ktp_data" not in st.session_state:
-    st.session_state["ktp_data"] = None
 if "ciphertext" not in st.session_state:
     st.session_state["ciphertext"] = None
-if "private_key" not in st.session_state:
-    st.session_state["private_key"] = None
 if "public_key" not in st.session_state:
     st.session_state["public_key"] = None
+if "private_key" not in st.session_state:
+    st.session_state["private_key"] = None
 if "decrypted_data" not in st.session_state:
     st.session_state["decrypted_data"] = None
-if "merged_data" not in st.session_state:
-    st.session_state["merged_data"] = None
 
 # App title
-st.title("Elliptic Curve ElGamal Encryption with Single KTP Record")
+st.title("Elliptic Curve ElGamal Encryption & Decryption")
 
-# Input KTP Data: Manual or Automatic
-st.subheader("Input KTP Data")
+# Sidebar for Key Management
+st.sidebar.subheader("Key Management")
 
-input_method = st.radio(
-    "Input Method", ["Manual Input", "Automatic Generation"])
+# Key generation button
+if st.sidebar.button("Generate Keys"):
+    st.cache_data.clear()
+    st.cache_resource.clear()
+    
+    private_key, public_key = generate_keys()
+    st.session_state["private_key"] = private_key
+    st.session_state["public_key"] = public_key
+    st.sidebar.success("Keys generated successfully!")
 
-if input_method == "Manual Input":
-    st.subheader("Enter KTP Details")
-    # Use columns for better layout
-    col1, col2 = st.columns(2)
+# Display current keys
+if st.session_state["private_key"] and st.session_state["public_key"]:
+    st.sidebar.subheader("Current Keys")
+    st.sidebar.write(f"**Private Key:** {st.session_state['private_key']}")
+    st.sidebar.write(f"**Public Key:** {st.session_state['public_key']}")
+else:
+    st.sidebar.warning("Generate keys first to proceed with encryption.")
 
-    with col1:
-        nik = st.text_input("NIK", placeholder="Enter NIK")
-        nama = st.text_input("Nama", placeholder="Enter Name")
-        tempat_tgl_lahir = st.text_input(
-            "Tempat/Tgl Lahir", placeholder="City, DD-MM-YYYY")
-        jenis_kelamin = st.selectbox(
-            "Jenis Kelamin", ["", "Laki-Laki", "Perempuan"], index=0)
-        gol_darah = st.selectbox(
-            "Golongan Darah", ["", "A", "B", "AB", "O"], index=0)
+# Input Data Section
+st.subheader("Input Message to Encrypt")
 
-    with col2:
-        agama = st.selectbox("Agama", [
-                             "", "Islam", "Kristen", "Katolik", "Hindu", "Buddha", "Konghucu"], index=0)
-        status_perkawinan = st.selectbox(
-            "Status Perkawinan", ["", "Belum Kawin", "Kawin", "Cerai Hidup", "Cerai Mati"], index=0
-        )
-        pekerjaan = st.text_input("Pekerjaan", placeholder="Enter Job Title")
-        kewarganegaraan = st.text_input(
-            "Kewarganegaraan", placeholder="Enter Nationality (e.g., WNI)")
-        berlaku_hingga = st.text_input(
-            "Berlaku Hingga", placeholder="Enter Expiry (e.g., SEUMUR HIDUP)")
+message = st.text_area(
+    "Enter the message", placeholder="Type your message here..."
+)
+if message:
+    st.write(f"Message to Encrypt: **{message}**")
+    st.write(f"Message Length: **{len(message)} characters**")
 
-    # Address details
-    st.subheader("Address Details")
-    alamat = st.text_area("Alamat", placeholder="Enter Address")
-    rt_rw = st.text_input("RT/RW", placeholder="Format: RT/RW")
-    kel_desa = st.text_input(
-        "Kel/Desa", placeholder="Enter Village/Subdistrict")
+# Encrypt Data
+if message and st.session_state["public_key"]:
+    st.subheader("Encrypt Message")
 
-    # Collect input into a dictionary
-    if st.button("Submit Manual Data"):
-        st.session_state["ktp_data"] = {
-            "NIK": nik,
-            "Nama": nama,
-            "Tempat/Tgl Lahir": tempat_tgl_lahir,
-            "Jenis Kelamin": jenis_kelamin,
-            "Gol Darah": gol_darah,
-            "Alamat": alamat,
-            "RT/RW": rt_rw,
-            "Kel/Desa": kel_desa,
-            "Agama": agama,
-            "Status Perkawinan": status_perkawinan,
-            "Pekerjaan": pekerjaan,
-            "Kewarganegaraan": kewarganegaraan,
-            "Berlaku Hingga": berlaku_hingga,
-        }
-        st.success("Manual KTP data submitted successfully!")
+    if st.button("Encrypt"):
+        try:
+            st.session_state["ciphertext"] = ecc.encrypt_message(
+                message, st.session_state["public_key"]
+            )
+            st.success("Message encrypted successfully!")
+        except Exception as e:
+            st.error(f"Encryption failed: {e}")
 
-elif input_method == "Automatic Generation":
-    if st.button("Generate Automatic Data"):
-        st.session_state["ktp_data"] = ktp_generator.generate_ktp()
-        st.success("Generated KTP data successfully!")
-
-# Show KTP Data
-if st.session_state["ktp_data"] is not None:
-    st.subheader("Review KTP Data")
-    ktp = st.session_state["ktp_data"]
-    for key, value in ktp.items():
-        st.write(f"- **{key}:** {value}")
-
-    # Merge KTP data for encryption
-    st.session_state["merged_data"] = DummyKTPGenerator.merge_ktp_data(ktp)
-    st.subheader("Merged KTP Data")
-    st.code(st.session_state["merged_data"], language="text", wrap_lines=True)
-    st.write(
-        f"**Length of Merged Data:** {len(st.session_state['merged_data'])}")
-
-# Encrypt KTP Data
-if st.session_state["ktp_data"] is not None:
-    st.subheader("Encrypt KTP Data")
-
-    if st.button("Encrypt Data"):
-        # Generate keys
-        private_key, public_key = ecc.generate_keys()
-        st.session_state["private_key"] = private_key
-        st.session_state["public_key"] = public_key
-
-        # Encrypt data
-        plaintext = st.session_state["merged_data"]
-        st.session_state["ciphertext"] = ecc.encrypt_message(
-            plaintext, public_key)
-        st.success("Data encrypted successfully!")
-
+    # Display ciphertext
     if st.session_state["ciphertext"]:
         st.subheader("Ciphertext")
-        st.write("**Ciphertext:**")
-        st.code(str(st.session_state["ciphertext"]),
-                language="text", wrap_lines=True)
+        st.code(str(st.session_state["ciphertext"]), language="text")
         st.write(
-            f"**Length of Ciphertext:** {len(str(st.session_state['ciphertext']))}")
-
-# Decrypt KTP Data
-if st.session_state["ciphertext"] is not None:
-    st.subheader("Decrypt KTP Data")
-
-    if st.button("Decrypt Data"):
-        st.session_state["decrypted_data"] = ecc.decrypt_message(
-            st.session_state["ciphertext"], st.session_state["private_key"]
+            f"**Ciphertext Length:** {len(str(st.session_state['ciphertext']))} characters"
         )
-        st.success("Data decrypted successfully!")
 
+# Decrypt Data
+if st.session_state["ciphertext"]:
+    st.subheader("Decrypt Message")
+
+    # Input the private key for decryption
+    input_private_key = st.text_input(
+        "Enter the private key for decryption", type="password"
+    )
+
+    if input_private_key:
+        try:
+            input_private_key = int(input_private_key)
+            if st.button("Decrypt"):
+                st.session_state["decrypted_data"] = ecc.decrypt_message(
+                    st.session_state["ciphertext"], input_private_key
+                )
+                st.success("Message decrypted successfully!")
+        except ValueError:
+            st.error("Invalid private key. Please enter a numeric value.")
+        except Exception as e:
+            st.error(f"Decryption failed: {e}")
+
+    # Display decrypted data
     if st.session_state["decrypted_data"]:
-        st.subheader("Decrypted KTP Data")
-        st.write("**Decrypted Data:**")
-        st.code(st.session_state["decrypted_data"],
-                language="text", wrap_lines=True)
+        st.subheader("Decrypted Message")
+        st.write(f"**Decrypted Data:** {st.session_state['decrypted_data']}")
         st.write(
-            f"**Length of Decrypted Data:** {len(st.session_state['decrypted_data'])}")
+            f"**Length of Decrypted Data:** {len(st.session_state['decrypted_data'])} characters"
+        )
 
-# Restart Process
+# Restart Process and Clear Cache
 if st.button("Start Over"):
-    st.session_state["ktp_data"] = None
-    st.session_state["ciphertext"] = None
-    st.session_state["private_key"] = None
-    st.session_state["public_key"] = None
-    st.session_state["decrypted_data"] = None
-    st.session_state["merged_data"] = None
+    for key in st.session_state.keys():
+        del st.session_state[key]
+
+    # Clear cached data and resources
+    st.cache_data.clear()
+    st.cache_resource.clear()
+
     st.rerun()

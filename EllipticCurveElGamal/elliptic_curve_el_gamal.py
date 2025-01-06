@@ -48,16 +48,6 @@ class EllipticCurveElGamal:
   def elliptic_curve_equation(self, x):
     return (x**3 + self.a*x + self.b) % self.p
 
-  # def is_on_curve(self, x, y):
-  #   return self.elliptic_curve_equation(x)  == (y**2) % self.p
-
-  # def generate_random_point(self):
-  #   while True:
-  #     x = random.randint(1, self.p - 1)
-  #     y = random.randint(1, self.p - 1)
-  #     if self.is_on_curve(x, y):
-  #       return Point(x, y)
-
   def is_on_curve(self, x, y):
         """Check if a point (x, y) lies on the curve."""
         if x is None or y is None:
@@ -76,20 +66,6 @@ class EllipticCurveElGamal:
                 for y in range(self.p):
                     if (y**2) % self.p == y_squared:
                         return Point(x, y)
-
-  # def calc_point_add(self, P, Q):
-  #   R = Point()  # Initialize the result point R
-  #   print(P, Q)
-
-  #   slope = ((Q.y - P.y) / (Q.x - P.x))
-
-  #   # Calculate Rx
-  #   R.x = (slope**2 - P.x - Q.x)
-
-  #   # Calculate Ry
-  #   R.y = (slope * (P.x - R.x) - P.y)
-
-  #   return R
 
   def calc_point_add(self, P, Q):
     """Calculate the addition of two points P and Q on the elliptic curve."""
@@ -138,14 +114,6 @@ class EllipticCurveElGamal:
       R.y = (slope * (P.x - R.x) - P.y) % self.p
 
       return R
-
-  # def calc_point_subtraction(self, P, Q):
-  #     """Calculate the subtraction of two points P - Q on the elliptic curve."""
-  #     # Negate Q to get -Q
-  #     Q_neg = Point(Q.x, (-Q.y) % self.p)
-
-  #     # Add P and -Q
-  #     return self.calc_point_add(P, Q_neg)
 
   def calc_point_subtraction(self, P, Q):
     """Calculate the subtraction of two points P - Q on the elliptic curve."""
@@ -238,21 +206,6 @@ class EllipticCurveElGamal:
 
         return plaintext_point
 
-  # def get_all_points(self):
-  #       """
-  #       Generate all valid points on the elliptic curve.
-
-  #       Returns:
-  #           list: A list of all valid points on the elliptic curve, including the point at infinity.
-  #       """
-  #       points = [Point()]  # Start with the point at infinity
-  #       for x in range(self.p):
-  #           y_squared = (x**3 + self.a * x + self.b) % self.p
-  #           for y in range(self.p):
-  #               if (y**2) % self.p == y_squared:
-  #                   points.append(Point(x, y))
-  #       return points
-
   def get_all_points(self):
       """
       Generate all valid points on the elliptic curve.
@@ -267,101 +220,6 @@ class EllipticCurveElGamal:
               if (y**2) % self.p == y_squared:
                   points.append(Point(x, y))
       return points
-
-
-
-  # def koblitz_encode(self, m, k=20):
-  #     """
-  #     Encode a number m as a point on the elliptic curve using Koblitz encoding.
-
-  #     Args:
-  #         m (int): The number to encode.
-  #         k (int): The multiplier for encoding.
-
-  #     Returns:
-  #         Point: The encoded point on the elliptic curve.
-  #     """
-  #     if m <= 0:
-  #         raise ValueError(f"Number m must be positive. Received: {m}")
-
-  #     # Iterate to find a valid x value
-  #     for i in range(1, k + 1):
-  #         x = (k * m + i) % self.p  # Ensure x is within the field range
-  #         y_squared = self.elliptic_curve_equation(x)
-  #         if pow(y_squared, (self.p - 1) // 2, self.p) == 1:  # Check if y^2 is a quadratic residue
-  #             # Find the corresponding y value
-  #             for y in range(self.p):
-  #                 if (y**2) % self.p == y_squared:
-  #                     return Point(x, y)
-
-  #     raise ValueError(f"Failed to encode number {m} as a valid point.")
-
-
-  # def koblitz_decode(self, point, k=20):
-  #     """
-  #     Decode a point on the elliptic curve back to a number m.
-
-  #     Args:
-  #         point (Point): The point to decode.
-  #         k (int): The multiplier used in encoding.
-
-  #     Returns:
-  #         int: The decoded number m.
-  #     """
-  #     if point.is_infinity():
-  #         raise ValueError("Cannot decode the point at infinity.")
-
-  #     x = point.x
-
-  #     # Iterate to find the correct m value
-  #     for m in range(1, self.p):
-  #         if (k * m + 1) % self.p == x or (k * m + 2) % self.p == x:
-  #             return m
-
-  #     raise ValueError(f"Point {point} does not decode to a valid number.")
-
-  # def is_quadratic_residue(self, a, mod):
-  #   return pow(a, (mod - 1) // 2, mod) == 1
-
-  # def koblitz_encode(self, m, k=100, used_points=None):
-  #     """
-  #     Encode a number m as a valid point on the elliptic curve, ensuring no duplicates.
-
-  #     Args:
-  #         m (int): The number to encode.
-  #         k (int): The multiplier for encoding.
-  #         used_points (set): A set of already-used points to avoid duplicates.
-
-  #     Returns:
-  #         Point: The encoded point on the elliptic curve.
-  #     """
-  #     if used_points is None:
-  #         used_points = set()
-
-  #     if m < 1 or m >= self.p:
-  #         raise ValueError(f"Number m must be in the range [1, {self.p - 1}]. Received: {m}")
-
-  #     for n in range(1, self.p):  # Iterate through offsets
-  #         x = (k * m + n) % self.p
-  #         y_squared = self.elliptic_curve_equation(x)
-
-  #         # Explicitly check for y^2 = 0 (y = 0)
-  #         if y_squared == 0:
-  #             point = Point(x, 0)
-  #             if point not in used_points:
-  #                 used_points.add(point)
-  #                 return point
-
-  #         # Otherwise, proceed with quadratic residue check
-  #         if self.is_quadratic_residue(y_squared, self.p):
-  #             for y in range(self.p):
-  #                 if (y**2) % self.p == y_squared:
-  #                     point = Point(x, y)
-  #                     if point not in used_points:
-  #                         used_points.add(point)
-  #                         return point
-
-  #     raise ValueError(f"Failed to encode number {m} as a valid point after {self.p} attempts.")
 
   def create_mappings(self):
     valid_points = [point for point in self.valid_points]
@@ -384,43 +242,6 @@ class EllipticCurveElGamal:
         if point not in self.point_to_char:
             raise ValueError(f"Point '{point}' not in mapping.")
         return self.point_to_char[point]
-
-  # def koblitz_decode(self, point, k=20):
-  #   n = 1
-  #   while True:
-  #     m = (point.x - n) // k
-  #     if m * k + n == point.x:
-  #       # print(point.x)
-  #       # print(point.x - n + 1)
-  #       return m
-  #     n += 1
-
-  # def encrypt_message(self, message, public_key):
-  #     """
-  #     Encrypt a message using the elliptic curve encryption scheme.
-
-  #     Args:
-  #         message (str): The message to encrypt.
-  #         public_key (Point): The public key to use for encryption.
-
-  #     Returns:
-  #         list: A list of encrypted tuples (C1, C2) representing the ciphertext.
-  #     """
-  #     ciphertext = []
-
-  #     for char in message:
-  #         # Encode character to a point
-  #         plaintext_point = self.encode_character(char)
-
-  #         # Encrypt the point
-  #         C1, C2 = self.encrypt(plaintext_point, public_key)
-
-  #         # Append the encrypted tuple to the ciphertext
-  #         ciphertext.append((C1, C2))
-
-  #         print(f"Character '{char}' encoded to {plaintext_point}, encrypted as (C1: {C1}, C2: {C2})")
-
-  #     return ciphertext
 
   def encrypt_message(self, message, public_key):
       """
