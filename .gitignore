@@ -22,3 +22,5 @@ local_settings.py
 *~
 .cache/
 .pytest_cache/
+
+*.png
