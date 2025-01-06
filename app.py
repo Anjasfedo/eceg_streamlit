@@ -3,6 +3,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+st.markdown("# Page 2 ❄️")
+st.sidebar.markdown("# Page 2 ❄️")
+
 # Display and style data
 
 st.title("🎈 My new Streamlit app")
